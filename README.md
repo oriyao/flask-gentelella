@@ -34,56 +34,22 @@ This project shows:
 - how to use [Leaflet.js and WebGL-Earth](http://afourmy.pythonanywhere.com/views/geographical_view) for 2D and 3D GIS programming.
 - how to use [Flask APScheduler](https://github.com/viniciuschiele/flask-apscheduler) to implement crontab-like features.
 
-## Run Flask Gentelella with a SQLite database
-
-### (Optional) Set up a [virtual environment](https://docs.python.org/3/library/venv.html) 
-
-### 1. Get the code
-    git clone https://github.com/afourmy/flask-gentelella.git
-    cd flask-gentelella
-
-### 2. Install requirements 
-    pip install -r requirements.txt
-
-### 3. Set the FLASK_APP environment variable
-    (Windows) set FLASK_APP=gentelella.py
-    (Unix) export FLASK_APP=gentelella.py
-    (Powershell) $env:FLASK_APP = ".\gentelella.py"
-
-### 4. Run the application
-    flask run --host=0.0.0.0
-
-### 4. Go to http://server_address:5000/, create an account and log in
-
-## Run Flask Gentelella with a PostgreSQL database (Ubuntu)
-
-### 1. Install a PostgreSQL database
-    sudo apt-get update
-    sudo apt-get install -y postgresql libpq-dev
-    sudo -u postgres psql -c "CREATE DATABASE gentelella;"
-    sudo -u postgres psql -c "CREATE USER gentelella WITH PASSWORD 'your-password';"
-    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE gentelella TO gentelella;"
-
-### 2. Export the following environment variables
-    export GENTELELLA_CONFIG_MODE=Production
-    export GENTELELLA_DATABASE_PASSWORD=your-password
-
-### 3. Follow the steps described in the previous section
 
 ## Run Flask Gentelella in a docker container
-
-### 1. Fetch the image on dockerhub
-    docker run -d -p 5000:5000 --name gentelella --restart always afourmy/flask-gentelella
-
-### 2. Go to http://server_address:5000/, create an account and log in
-
-## Run Flask Gentelella in a docker container with nginx and a PostgreSQL database
-
-### 1. Get the code
     git clone https://github.com/afourmy/flask-gentelella.git
-    cd flask-gentelella
+### 1. Fetch the image on dockerhub
+    docker pull docker.io/tiangolo/uwsgi-nginx-flask
+    
+    docker run -d \
+    --name gentelella \
+    -p 3388:80 \
+    --restart=always \
+    -v /home/flask-gentelella-master:/app \
+    --privileged=true \
+    -e FLASK_APP=gentelella.py \
+    -e FLASK_DEBUG=1 \
+    docker.io/tiangolo/uwsgi-nginx-flask \
+    flask run --host=0.0.0.0 --port=80
 
-### 2. Start all services
-    sudo docker-compose pull && sudo docker-compose build && sudo docker-compose up -d
+### 2. Go to http://server_address:3388/, create an account and log in
 
-### 3. Go to http://server_address, create an account and log in
