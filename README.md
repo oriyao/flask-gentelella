@@ -50,6 +50,9 @@ This project shows:
     -e FLASK_DEBUG=1 \
     docker.io/tiangolo/uwsgi-nginx-flask \
     flask run --host=0.0.0.0 --port=80
-
-### 2. Go to http://server_address:3388/, create an account and log in
+### 2. pip install requirements
+    docker exec -it gentelella bash
+    pip install --upgrade pip
+    pip install -r requirements.txt
+### 3. Go to http://server_address:3388/, create an account and log in
 
