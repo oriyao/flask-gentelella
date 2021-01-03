@@ -1,42 +1,42 @@
-#from bcrypt import gensalt, hashpw
+"""
+# coding:utf-8
+@Time    : 2021/01/03
+@Author  : oriyao
+@mail    : ylzhangyao@gmail.com
+@File    : models.py
+@Describe: User model
+"""
 from flask_login import UserMixin
-# from sqlalchemy import Binary, Column, Integer, String
+from app import login_manager,mongo
+from flask import current_app
 
-from app import login_manager
-# from app import db
 
-class User( UserMixin):
-
-    __tablename__ = 'User'
-
-    #id = Column(Integer, primary_key=True)
-    #username = Column(String, unique=True)
-    #email = Column(String, unique=True)
-    #password = Column(Binary)
-
-    #def __init__(self, **kwargs):
-        #for property, value in kwargs.items():
-            # depending on whether value is an iterable or not, we must
-            # unpack it's value (when **kwargs is request.form, some values
-            # will be a 1-element list)
-            #if hasattr(value, '__iter__') and not isinstance(value, str):
-                # the ,= unpack of a singleton fails PEP8 (travis flake8 test)
-            #    value = value[0]
-            #if property == 'password':
-                #value = hashpw(value.encode('utf8'), gensalt())
-            #setattr(self, property, value)
-
-    #def __repr__(self):
-    #    return str(self.username)
-
+class Mongouser(UserMixin):
+    def __init__(self,username):
+        self.username = username
+    @staticmethod
+    def check_password(password1,password2):
+        if password1 == password2:
+            return True
+        return False
+    def get_id(self):
+        return self.username
 
 @login_manager.user_loader
-def user_loader(id):
-    return User.query.filter_by(id=id).first()
-
+def user_loader(username):
+    collection_users = mongo.db['oriyao_users']
+    users = collection_users.find_one({"name": username})
+    current_app.logger.info('login_manager.user_loader：' + str(users))
+    if users:
+        return Mongouser(username=users['name'])
+    return None
 
 @login_manager.request_loader
 def request_loader(request):
     username = request.form.get('username')
-    user = User.query.filter_by(username=username).first()
-    return user if user else None
+    collection_users = mongo.db['oriyao_users']
+    current_app.logger.info('Login manager request loader：' + str(collection_users))
+    users = collection_users.find_one({"name": username})
+    if users:
+        return Mongouser(username=users['name'])
+    return None

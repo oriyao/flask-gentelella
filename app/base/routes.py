@@ -1,5 +1,13 @@
-#from bcrypt import checkpw
-from flask import jsonify, render_template, redirect, request, url_for
+"""
+# coding:utf-8
+@Time    : 2021/01/03
+@Author  : oriyao
+@mail    : ylzhangyao@gmail.com
+@File    : __init__.py
+@Describe: main
+"""
+
+from flask import jsonify, render_template, redirect, request, url_for,current_app
 from flask_login import (
     current_user,
     login_required,
@@ -7,11 +15,10 @@ from flask_login import (
     logout_user
 )
 
-from app import login_manager
-# from app import db
+from app import mongo, login_manager
 from app.base import blueprint
 from app.base.forms import LoginForm, CreateAccountForm
-from app.base.models import User
+from app.base.models import Mongouser
 
 
 @blueprint.route('/')
@@ -36,27 +43,50 @@ def route_errors(error):
     return render_template('errors/page_{}.html'.format(error))
 
 ## Login & Registration
-
-
 @blueprint.route('/login', methods=['GET', 'POST'])
 def login():
     login_form = LoginForm(request.form)
     create_account_form = CreateAccountForm(request.form)
+
     if 'login' in request.form:
         username = request.form['username']
         password = request.form['password']
-        #user = User.query.filter_by(username=username).first()
-        #if user and checkpw(password.encode('utf8'), user.password):
-        #    login_user(user)
-        #return redirect(url_for('base_blueprint.route_default'))
-        return render_template('errors/page_403.html')
+        current_app.logger.warning(username)
+        current_app.logger.warning(password)
+        collection_users = mongo.db['oriyao_users']
+        users = collection_users.find_one({"name": username})
+        current_app.logger.info('Mongodb user login')
+        current_app.logger.info(users)
+        if users and Mongouser.check_password(password, users['password']):
+            user_obj = Mongouser(username=users['name'])
+            current_app.logger.info(user_obj)
+            current_app.logger.info('登录成功')
+            login_user(user_obj)
+            return redirect(url_for('home_blueprint.index'))
+        return render_template('login/login.html',login_form=login_form,create_account_form=create_account_form,message='Wrong User or Password')
     if not current_user.is_authenticated:
-        return render_template(
-            'login/login.html',
-            login_form=login_form,
-            create_account_form=create_account_form
-        )
+        return render_template('login/login.html',login_form=login_form,create_account_form=create_account_form)
     return redirect(url_for('home_blueprint.index'))
+
+# @blueprint.route('/login', methods=['GET', 'POST'])
+# def login():
+#     login_form = LoginForm(request.form)
+#     create_account_form = CreateAccountForm(request.form)
+#     if 'login' in request.form:
+#         username = request.form['username']
+#         password = request.form['password']
+#         user = User.query.filter_by(username=username).first()
+#         if user and checkpw(password.encode('utf8'), user.password):
+#             login_user(user)
+#             return redirect(url_for('base_blueprint.route_default'))
+#         return render_template('errors/page_403.html')
+#     if not current_user.is_authenticated:
+#         return render_template(
+#             'login/login.html',
+#             login_form=login_form,
+#             create_account_form=create_account_form
+#         )
+#     return redirect(url_for('home_blueprint.index'))
 
 
 @blueprint.route('/create_user', methods=['POST'])

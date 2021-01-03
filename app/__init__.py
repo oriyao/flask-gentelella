@@ -1,17 +1,57 @@
 from flask import Flask, url_for
 from flask_login import LoginManager
-#from flask_sqlalchemy import SQLAlchemy
 from importlib import import_module
-from logging import basicConfig, DEBUG, getLogger, StreamHandler
-from os import path
+import logging
+from logging.handlers import RotatingFileHandler
 
-#db = SQLAlchemy()
+from os import path
+import os
+from app.setting import config
+from app.mydb import initial_mongodb
+
+from flask_pymongo import PyMongo
+
+mongo = PyMongo()
+
 login_manager = LoginManager()
+
+def create_app(config_name=None):
+    if config_name is None:
+        config_name = os.getenv('FLASK_CONFIG', 'development')
+    app = Flask(__name__, static_folder='base/static')
+    app.config.from_object(config[config_name])
+    # app.logger.warning(app.config["MONGO_URI"] )
+    app.config["MONGO_URI"] = "mongodb://testuser:testpassword@152.32.132.155:27017/test20210102?authSource=admin"
+    register_extensions(app)
+    register_blueprints(app)
+    configure_database(app)
+
+
+    # command function
+    register_cmd(app)
+
+    configure_logs(app)
+    # Print initial logs
+    app.logger.info('oriyao-flask-blog initial')
+    apply_themes(app)
+    app.logger.info('config_name:' + str(config_name))
+    app.logger.info('config_name:' + str(config[config_name]))
+    app.logger.info(app.config["TESTENV"])
+    return app
+
+
+def configure_logs(app):
+    app.logger.setLevel(logging.DEBUG)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    file_handler = RotatingFileHandler('logs/oriyao-flask-gentelella.log', maxBytes=1000 * 1024, backupCount=10)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.DEBUG)
+    app.logger.addHandler(file_handler)
 
 
 def register_extensions(app):
-    # db.init_app(app)
     login_manager.init_app(app)
+    mongo.init_app(app)
 
 
 def register_blueprints(app):
@@ -21,37 +61,10 @@ def register_blueprints(app):
 
 
 def configure_database(app):
-
-    @app.before_first_request
-    def initialize_database():
-        db.create_all()
-
-    @app.teardown_request
-    def shutdown_session(exception=None):
-        db.session.remove()
-
-
-def configure_logs(app):
-    basicConfig(filename='error.log', level=DEBUG)
-    logger = getLogger()
-    logger.addHandler(StreamHandler())
+    pass
 
 
 def apply_themes(app):
-    """
-    Add support for themes.
-
-    If DEFAULT_THEME is set then all calls to
-      url_for('static', filename='')
-      will modfify the url to include the theme name
-
-    The theme parameter can be set directly in url_for as well:
-      ex. url_for('static', filename='', theme='')
-
-    If the file cannot be found in the /static/<theme>/ lcation then
-      the url will not be modified and the file is expected to be
-      in the default /static/ location
-    """
     @app.context_processor
     def override_url_for():
         return dict(url_for=_generate_url_for_theme)
@@ -66,15 +79,10 @@ def apply_themes(app):
                     values['filename'] = theme_file
         return url_for(endpoint, **values)
 
+def register_cmd(app):
+    @app.cli.command()
+    def initdb():
+        """Initialize the database."""
+        initial_mongodb()
 
-def create_app(config, selenium=False):
-    app = Flask(__name__, static_folder='base/static')
-    app.config.from_object(config)
-    if selenium:
-        app.config['LOGIN_DISABLED'] = True
-    register_extensions(app)
-    register_blueprints(app)
-    #configure_database(app)
-    configure_logs(app)
-    apply_themes(app)
-    return app
+

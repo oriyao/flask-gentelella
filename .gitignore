@@ -9,6 +9,9 @@ __pycache__/
 # database & logs
 *.db
 *.log
+*.log*
+log
+logs/
 
 # venv
 env
